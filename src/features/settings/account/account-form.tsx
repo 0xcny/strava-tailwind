@@ -91,7 +91,7 @@ export default function AccountForm() {
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
-                      variant={"outline-solid"}
+                      variant={"outline"}
                       className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                     >
                       <span>Pick a date</span>

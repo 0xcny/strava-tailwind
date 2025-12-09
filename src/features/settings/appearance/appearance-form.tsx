@@ -55,7 +55,7 @@ export default function AppearanceForm() {
               <div className="relative w-max">
                 <FormControl>
                   <select
-                    className={cn(buttonVariants({ variant: "outline-solid" }), "w-[200px] appearance-none font-normal")}
+                    className={cn(buttonVariants({ variant: "outline" }), "w-[200px] appearance-none font-normal")}
                     {...field}
                   >
                     <option value="inter">Inter</option>
