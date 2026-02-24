@@ -34,7 +34,11 @@ export function StatusChart() {
       <CardContent className="flex flex-1 items-center pb-0">
         <ChartContainer config={chartConfig} className="mx-auto aspect-square w-full max-w-[250px]">
           <RadialBarChart data={chartData} endAngle={180} innerRadius={80} outerRadius={130}>
-            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+<ChartTooltip
+  cursor={false}
+  content={(p) => <ChartTooltipContent {...(p as any)} hideLabel />}
+/>
+
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {

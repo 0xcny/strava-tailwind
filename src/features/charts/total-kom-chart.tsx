@@ -30,7 +30,11 @@ export function TotalKomChart({
           domain={["dataMin - 100", "dataMax + 100"]}
           tickCount={7}
         />
-        <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+        <ChartTooltip
+  cursor={false}
+  content={(p) => <ChartTooltipContent {...(p as any)} hideLabel />}
+
+/>
         <defs>
           <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="var(--color-desktop)" stopOpacity={0.8} />

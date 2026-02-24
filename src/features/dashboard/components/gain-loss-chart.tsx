@@ -49,7 +49,11 @@ export function GainLossChart() {
               axisLine={false}
               tickFormatter={(value) => value.slice(0, 3)}
             />
-            <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+            <ChartTooltip
+  cursor={false}
+  content={(p) => <ChartTooltipContent {...(p as any)} hideLabel />}
+/>
+
             <ChartLegend content={<ChartLegendContent />} />
             <Bar dataKey="lost" stackId="a" fill="var(--color-lost)" radius={[0, 0, 4, 4]} />
             <Bar dataKey="gained" stackId="a" fill="var(--color-gained)" radius={[4, 4, 0, 0]} />
