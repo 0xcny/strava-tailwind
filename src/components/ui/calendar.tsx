@@ -8,6 +8,39 @@ import { buttonVariants } from "@/components/ui/button"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
+function CalendarNav(props: any) {
+  const { onPreviousClick, onNextClick, previousMonth, nextMonth } = props
+
+  return (
+    <div className="flex items-center justify-between px-1">
+      <button
+        type="button"
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+        )}
+        disabled={!previousMonth}
+        onClick={() => onPreviousClick?.()}
+        aria-label="Previous month"
+      >
+        <ChevronLeftIcon className="h-4 w-4" />
+      </button>
+
+      <button
+        type="button"
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+        )}
+        disabled={!nextMonth}
+        onClick={() => onNextClick?.()}
+        aria-label="Next month"
+      >
+        <ChevronRightIcon className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   return (
@@ -49,9 +82,8 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => <ChevronLeftIcon className={cn("h-4 w-4", className)} {...props} />,
-        IconRight: ({ className, ...props }) => <ChevronRightIcon className={cn("h-4 w-4", className)} {...props} />,
-      }}
+  Nav: CalendarNav,
+}}
       {...props}
     />
   )
