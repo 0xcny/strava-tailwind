@@ -110,7 +110,7 @@ export async function GET(req: Request) {
       const page = max_pages + 1
       log(`[API] Fetching an extra page (${page})`)
       try {
-        const pageResult = await fetchKomPageWithRetry(page, stravaToken)
+        const pageResult = await fetchKomPageWithRetry(page, stravaToken, 2, 1000, true)
         for (const [key, value] of pageResult) {
           apiDetails.set(key, value)
         }
@@ -389,7 +389,8 @@ const fetchKomPageWithRetry = async (
   page: number,
   token: string,
   retries = 2,
-  delay = 1000
+  delay = 1000,
+  allowEmpty = false
 ): Promise<Map<number, { detail: EffortDetailRecord; starred: boolean }>> => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -400,6 +401,12 @@ const fetchKomPageWithRetry = async (
       })
       STRAVA_REQUEST_COUNT++
       log(`  - ${page} (${response.data.length})`)
+      if (!allowEmpty && response.data.length === 0) {
+        log(`[ERROR] Empty response on attempt ${i + 1} fetching page ${page}, retrying in ${delay}ms...`)
+        await new Promise((res) => setTimeout(res, delay))
+        delay *= 2
+        continue
+      }
       const effortDetails: Map<number, { detail: EffortDetailRecord; starred: boolean }> = new Map()
       response.data.forEach((kom: any) => {
         let average_speed = 0
@@ -430,7 +437,7 @@ const fetchKomPageWithRetry = async (
       }
     }
   }
-  throw new Error(`503 error on fetching page ${page} after ${retries} retries.`)
+  throw new Error(`Failed to fetch page ${page} after ${retries} retries.`)
 }
 
 async function sendOrder(order: Order[]) {
