@@ -16,10 +16,18 @@ const formSchema = z.object({
   message: z.string().min(10, "Message must be at least 10 characters"),
 })
 
+type FormState = {
+  success?: boolean
+  message?: string
+  error?: string
+  errors?: Record<string, string[]>
+  values?: { name: string; email: string; message: string } | null
+} | null
+
 export function ContactSection() {
   const currentYear = new Date().getFullYear()
 
-  const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
+  const [state, formAction, isPending] = useActionState<FormState, FormData>(async (prevState, formData) => {
     const formValues = {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
