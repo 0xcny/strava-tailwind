@@ -107,6 +107,7 @@ export async function getDeltaSegments(input: TableQuerySchema) {
           pageCount: result.totalPages,
         }
       } catch (_err) {
+        console.error("Delta query error:", _err)
         return { data: [], pageCount: 0 }
       }
     },

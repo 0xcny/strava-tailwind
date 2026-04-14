@@ -49,7 +49,7 @@ export async function GET(req: Request) {
     }
 
     log("[AUTH] Initializing Pocketbase")
-    await pb.admins.authWithPassword(process.env.ADMIN_EMAIL!, process.env.ADMIN_PW!)
+    await pb.collection("_superusers").authWithPassword(process.env.ADMIN_EMAIL!, process.env.ADMIN_PW!)
     pb.autoCancellation(false)
 
     log(`[DATABASE] Fetching Strava Token - `, false)
@@ -80,62 +80,89 @@ export async function GET(req: Request) {
 
     const max_pages = Math.ceil(ownedKomIds.size / 200)
 
+    let apiIds: Set<number>
+    let usedScraper = false
+
     log(`[API] Fetching First Kom Page`)
     try {
       apiDetails = await fetchKomPageWithRetry(1, stravaToken, 3, 1500)
     } catch (error) {
-      return errorResponse("Couldn't fetch first Kom Page ", 503, error)
+      log(`[WARNING] API failed: ${error}`)
     }
 
-    if (apiDetails.size === 200) {
-      log(`[API] Fetching ${max_pages - 1} more Kom Pages `)
+    if (apiDetails.size === 0) {
+      log(`[SCRAPER] API returned empty — falling back to scraper`)
+      const scraperUrl = process.env.SCRAPER_URL
+      if (!scraperUrl) return errorResponse("API failed and scraper URL not configured", 503)
       try {
-        for (let page = 2; page <= max_pages; page++) {
-          apiPromises.push(fetchKomPageWithRetry(page, stravaToken))
-        }
-        apiResults = await Promise.all(apiPromises)
+        const scraperRes = await fetch(`${scraperUrl}/scrape?athlete_id=${userId}`, {
+          headers: { "x-api-secret": process.env.SCRAPER_SECRET || "" },
+        })
+        if (!scraperRes.ok) throw new Error(`Scraper returned ${scraperRes.status}`)
+        const scraperData = (await scraperRes.json()) as { segment_ids: number[]; age_minutes: number; scraping: boolean }
+        if (scraperData.scraping) throw new Error("Scraper is still running")
+        if (scraperData.age_minutes > 120) throw new Error(`Scraper data too stale (${scraperData.age_minutes}min old)`)
+        apiIds = new Set(scraperData.segment_ids)
+        usedScraper = true
+        log(`[SCRAPER] Got ${apiIds.size} segment IDs (${scraperData.age_minutes}min old)`)
       } catch (error) {
-        return errorResponse("Couldn't fetch Kom Lists", 503, error)
+        return errorResponse("Both API and scraper failed", 503, error)
       }
-      for (const result of apiResults) {
-        for (const [key, value] of result) {
-          apiDetails.set(key, value)
+    } else {
+      if (apiDetails.size === 200) {
+        log(`[API] Fetching ${max_pages - 1} more Kom Pages `)
+        try {
+          for (let page = 2; page <= max_pages; page++) {
+            apiPromises.push(fetchKomPageWithRetry(page, stravaToken))
+          }
+          apiResults = await Promise.all(apiPromises)
+        } catch (error) {
+          return errorResponse("Couldn't fetch Kom Lists", 503, error)
+        }
+        for (const result of apiResults) {
+          for (const [key, value] of result) {
+            apiDetails.set(key, value)
+          }
         }
       }
-    }
 
-    const siteWrap = apiDetails.size / 200 === max_pages
+      const siteWrap = apiDetails.size / 200 === max_pages
 
-    if (siteWrap) {
-      const page = max_pages + 1
-      log(`[API] Fetching an extra page (${page})`)
+      if (siteWrap) {
+        const page = max_pages + 1
+        log(`[API] Fetching an extra page (${page})`)
+        try {
+          const pageResult = await fetchKomPageWithRetry(page, stravaToken, 2, 1000, true)
+          for (const [key, value] of pageResult) {
+            apiDetails.set(key, value)
+          }
+        } catch (error) {
+          return errorResponse(`Couldn't fetch extra page (${page})`, 503, error)
+        }
+      }
+
+      const concurrentUpdates: Promise<any>[] = []
+      log("[DATABASE] Updating star status of owned koms")
       try {
-        const pageResult = await fetchKomPageWithRetry(page, stravaToken, 2, 1000, true)
-        for (const [key, value] of pageResult) {
-          apiDetails.set(key, value)
-        }
+        userEfforts.forEach((effort: KomEffortRecord) => {
+          const apiIsStarred = apiDetails.get(effort.segment_id)?.starred
+          if (apiIsStarred != null && effort.is_starred !== apiIsStarred) {
+            concurrentUpdates.push(pb.collection(Collections.KomEfforts).update(effort.id!, { is_starred: apiIsStarred }))
+          }
+        })
       } catch (error) {
-        return errorResponse(`Couldn't fetch extra page (${page})`, 503, error)
+        log(`[WARNING] Failed to update star status of owned koms`)
       }
+
+      apiIds = new Set(apiDetails.keys())
     }
 
-    const concurrentUpdates: Promise<any>[] = []
-    log("[DATABASE] Updating star status of owned koms")
-    try {
-      userEfforts.forEach((effort: KomEffortRecord) => {
-        const apiIsStarred = apiDetails.get(effort.segment_id)?.starred
-        if (apiIsStarred != null && effort.is_starred !== apiIsStarred) {
-          concurrentUpdates.push(pb.collection(Collections.KomEfforts).update(effort.id!, { is_starred: apiIsStarred }))
-        }
-      })
-    } catch (error) {
-      log(`[WARNING] Failed to update star status of owned koms`)
+    if (ownedKomIds.size - apiIds.size > 150) {
+      log(`[ERROR] KOM count mismatch: DB has ${ownedKomIds.size}, ${usedScraper ? "scraper" : "API"} returned ${apiIds.size} — rejecting`)
+      return errorResponse("Can't account for complete Kom List", 510)
     }
 
-    const apiIds: Set<number> = new Set(apiDetails.keys())
-    if (ownedKomIds.size - apiIds.size > 150) return errorResponse("Can't account for complete Kom List", 510)
-
-    log("[API] Success")
+    log(`[${usedScraper ? "SCRAPER" : "API"}] Success`)
 
     if (ownedKomIds.symmetricDifference(apiIds).size !== 0) {
       const [lostKomIds, gainedKomIds] = [ownedKomIds.difference(apiIds), apiIds.difference(ownedKomIds)]

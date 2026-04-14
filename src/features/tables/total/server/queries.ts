@@ -88,6 +88,7 @@ export async function getTotalKoms(input: TableQuerySchema) {
           pageCount: result.totalPages,
         }
       } catch (_err) {
+        console.error("Total query error:", _err)
         return { data: [], pageCount: 0 }
       }
     },
