@@ -232,7 +232,12 @@ export async function GET(req: Request) {
         for (const gainedId of gainedKomIds) {
           const storedEffort = userEfforts.find((effort) => effort.segment_id === gainedId)
           const effortDetail = apiDetails.get(gainedId)?.detail
-          const detailRecord = await pb.collection(Collections.EffortDetails).create(effortDetail)
+          let detailRecord: { id: string } | null = null
+          if (effortDetail) {
+            detailRecord = await pb.collection(Collections.EffortDetails).create(effortDetail)
+          } else {
+            log(`[WARNING] No effort detail available for gained KOM (seg_id:${gainedId}) — scraper mode`)
+          }
 
           if (!(storedEffort == null || storedEffort.id == null)) {
             log(
@@ -246,7 +251,7 @@ export async function GET(req: Request) {
                   storedEffort.id!,
                   {
                     has_kom: true,
-                    pr_effort: detailRecord.id,
+                    ...(detailRecord && { pr_effort: detailRecord.id }),
                   },
                   { cache: "no-store" }
                 )
@@ -269,7 +274,7 @@ export async function GET(req: Request) {
               segment_id: gainedId,
               kom_effort: storedEffort.id,
               status: restored ? "restored" : "gained",
-              user_effort: detailRecord.id,
+              ...(detailRecord && { user_effort: detailRecord.id }),
             }
 
             let gainRecordRef
@@ -335,7 +340,7 @@ export async function GET(req: Request) {
               segment_id: seg_ref.segment_id,
               is_starred: false,
               has_kom: true,
-              pr_effort: detailRecord.id,
+              ...(detailRecord && { pr_effort: detailRecord.id }),
             }
             let newKomEffort: KomEffortRecord
             try {
@@ -355,7 +360,7 @@ export async function GET(req: Request) {
               segment_id: seg_ref.segment_id,
               kom_effort: newKomEffort.id,
               status: active ? "gained" : "created",
-              user_effort: detailRecord.id,
+              ...(detailRecord && { user_effort: detailRecord.id }),
             }
 
             let gainRecordRef
