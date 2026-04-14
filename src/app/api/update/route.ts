@@ -82,6 +82,7 @@ export async function GET(req: Request) {
 
     let apiIds: Set<number>
     let usedScraper = false
+    const concurrentUpdates: Promise<any>[] = []
 
     log(`[API] Fetching First Kom Page`)
     try {
@@ -141,7 +142,6 @@ export async function GET(req: Request) {
         }
       }
 
-      const concurrentUpdates: Promise<any>[] = []
       log("[DATABASE] Updating star status of owned koms")
       try {
         userEfforts.forEach((effort: KomEffortRecord) => {
