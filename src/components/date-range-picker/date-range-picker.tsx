@@ -11,7 +11,6 @@ import { Calendar } from "../ui/calendar"
 import { DateRange } from "./types"
 import { areRangesEqual, formatDate, getDateAdjustedForTimezone } from "./utils"
 import { getPresetRange, PRESETS } from "./get-presets"
-import { Calendar1Icon } from "lucide-react"
 
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
@@ -249,8 +248,6 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
               setIsOpen(false)
               if (!areRangesEqual(tempRange, openedRangeRef.current)) {
                 setRange(tempRange)
-                console.log("COMP")
-                console.log(tempRange)
                 onUpdate(tempRange)
               }
             }}

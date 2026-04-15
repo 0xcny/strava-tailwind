@@ -11,20 +11,11 @@ export async function getTotalKoms(input: TableQuerySchema) {
   return await unstable_cache(
     async () => {
       try {
-        // Offset to paginate the results
-        const offset = (input.page - 1) * input.perPage
-        // Column and order to sort by
-        // Spliting the sort string by "." to get the column and order
-        // Example: "title.desc" => ["title", "desc"]
         const [column, order] = (input.sort?.split(".").filter(Boolean) ?? ["created", "desc"]) as [
           keyof BaseTableSegment | undefined,
           "asc" | "desc" | undefined
         ]
-
         const sortExpression = getTotalSortExpression(column, order)
-        // Convert the date strings to date objects
-        const fromDate = input.from ? new Date(input.from) : undefined
-        const toDate = input.to ? new Date(input.to) : undefined
 
         // Build filter conditions
         let filterConditions = []

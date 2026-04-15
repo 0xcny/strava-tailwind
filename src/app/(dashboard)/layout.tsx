@@ -34,23 +34,23 @@ const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
       </Suspense>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex px-4 h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 ">
+        <header className="flex px-4 h-14 shrink-0 items-center justify-between gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Strava App</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">KomQuest</BreadcrumbLink>
                 </BreadcrumbItem>
                 <Breadcrumbs />
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="flex space-x-2">
-            <div className="flex mx-auto space-x-2 justify-evenly items-center px-2 py-1 rounded bg-secondary text-secondary-foreground font-medium">
-              <CrownIcon height={17} width={17} />
-              <Suspense fallback={<span>0</span>}>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-full bg-brand/10 px-3 py-1 text-sm font-medium text-brand dark:text-brand">
+              <CrownIcon className="h-3.5 w-3.5" />
+              <Suspense fallback={<span className="tabular-nums">--</span>}>
                 <TotalKomCount komCount={komCount} />
               </Suspense>
             </div>

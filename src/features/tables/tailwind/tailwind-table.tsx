@@ -12,14 +12,15 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table"
-import { Check, Loader, AlertCircle } from "lucide-react"
+import { Check, Loader, AlertCircle, WindIcon } from "lucide-react"
 import { TailwindTableSegment } from "@/lib/types/types"
 import { DataTable } from "../_components/table"
-import { TableFilterField } from "../_lib/types"
 import { TableToolbar } from "../_components/table-toolbar"
 import { createBaseColumns } from "../_lib/shared-columns"
+import { createFilterFields } from "../_lib/filter-fields"
 import { tailwindTableColumns } from "./columns"
 import { Process, StatusState } from "./types"
+import { cn } from "@/lib/utils"
 
 export default function TailwindTable() {
   const [status, setStatus] = useState<StatusState>({ step: "fetch" })
@@ -38,65 +39,21 @@ export default function TailwindTable() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
 
-  // Define the process steps
   const processes: Process[] = [
-    {
-      id: "fetch",
-      name: "Fetching Starred Segments",
-      description: "Retrieving a list of starred Strava segments",
-    },
-    {
-      id: "process",
-      name: "Processing Segments",
-      description: "Retrieving detailed data for cached & newly fetched segments",
-    },
-    {
-      id: "update",
-      name: "Updating Cache",
-      description: "Updating database cache with newly added segments",
-    },
-
-    {
-      id: "weather",
-      name: "Calculating Tailwind",
-      description: "Calculating tailwind percentages and metrics",
-    },
+    { id: "fetch", name: "Fetching Starred Segments", description: "Retrieving your starred segments from Strava" },
+    { id: "process", name: "Processing Segments", description: "Analyzing cached and newly fetched segment data" },
+    { id: "update", name: "Updating Cache", description: "Syncing new segments to database" },
+    { id: "weather", name: "Calculating Tailwind", description: "Computing wind metrics for each segment" },
   ]
 
-  // Memoize the columns so they don't re-render on every render
   const columns: ColumnDef<TailwindTableSegment>[] = useMemo(() => {
     const baseColumns = createBaseColumns<TailwindTableSegment>()
     return [...baseColumns, ...tailwindTableColumns]
   }, [])
 
-  const filterFields: TableFilterField<TailwindTableSegment>[] = [
-    {
-      label: "Name",
-      value: "name",
-      placeholder: "Filter names...",
-    },
-    {
-      label: "Labels",
-      value: "labels",
-      options: [
-        "Hazardous",
-        "Circuit",
-        "Curvy",
-        "Straight",
-        "Climb",
-        "Downhill",
-        "Overlong",
-        "Contested",
-        "Uncontested",
-      ].map((label) => ({
-        label: label[0]?.toUpperCase() + label.slice(1),
-        value: label,
-      })),
-    },
-  ]
+  const filterFields = createFilterFields<TailwindTableSegment>()
 
   useEffect(() => {
-    // Map status step to process index
     if (status.step === "fetch") setCurrentStep(0)
     else if (status.step === "process") setCurrentStep(1)
     else if (status.step === "update") setCurrentStep(2)
@@ -105,15 +62,11 @@ export default function TailwindTable() {
   }, [status.step])
 
   useEffect(() => {
-    // Set up SSE connection
     const eventSource = new EventSource("/api/tailwind")
 
-    // Listen for status updates
     eventSource.addEventListener("status", (event) => {
       const data = JSON.parse((event as MessageEvent).data) as StatusState
       setStatus(data)
-
-      // If processing is complete, update segments and stop loading
       if (data.step === "complete" && data.data?.segments) {
         setSegments(data.data.segments)
         setLoading(false)
@@ -121,29 +74,22 @@ export default function TailwindTable() {
       }
     })
 
-    // Listen for errors
     eventSource.addEventListener("error", (event) => {
       try {
-        const data = JSON.parse((event as MessageEvent).data)
-        setError("An error occurred")
-      } catch (e) {
-        setError("An error occurred")
-      }
+        JSON.parse((event as MessageEvent).data)
+      } catch {}
+      setError("An error occurred while loading tailwind data.")
       setLoading(false)
       eventSource.close()
     })
 
-    // Handle connection errors
     eventSource.onerror = () => {
-      setError("Connection error")
+      setError("Connection lost. Please refresh to try again.")
       setLoading(false)
       eventSource.close()
     }
 
-    // Clean up on unmount
-    return () => {
-      eventSource.close()
-    }
+    return () => eventSource.close()
   }, [])
 
   const table = useReactTable({
@@ -151,9 +97,7 @@ export default function TailwindTable() {
     columns,
     initialState: {
       columnOrder: Object.keys(columnVisibility),
-      pagination: {
-        pageSize: 30,
-      },
+      pagination: { pageSize: 30 },
       sorting: [{ id: "tailwind", desc: true }],
     },
     state: { columnVisibility, columnFilters },
@@ -169,48 +113,48 @@ export default function TailwindTable() {
   return (
     <>
       {error && (
-        <div className="w-full p-4 mb-4 bg-red-50 border border-red-300 rounded-lg">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-            <p className="text-red-800">{error || "An error occurred"}</p>
+        <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-4">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <p>{error}</p>
           </div>
         </div>
       )}
 
       {loading && (
-        <div className="mx-auto w-full max-w-2xl py-4 px-4 md:px-6 space-y-4">
+        <div className="mx-auto w-full max-w-lg space-y-3 py-8">
           {processes.map((process, index) => {
             const isComplete = currentStep > index
             const isActive = currentStep === index
             return (
               <div
                 key={process.id}
-                className={`p-4 border rounded-lg transition-all ${
-                  isComplete
-                    ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                    : isActive
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                    : "border-gray-200 dark:border-gray-800"
-                }`}
+                className={cn(
+                  "flex items-center gap-4 rounded-lg border p-4 transition-all",
+                  isComplete && "border-success/30 bg-success/5",
+                  isActive && "border-brand/30 bg-brand/5",
+                  !isComplete && !isActive && "border-border bg-card opacity-50"
+                )}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      isComplete ? "bg-green-500" : isActive ? "bg-blue-500" : "bg-gray-200 dark:bg-gray-700"
-                    }`}
-                  >
-                    {isComplete ? (
-                      <Check className="h-5 w-5 text-white" />
-                    ) : isActive ? (
-                      <Loader className="h-5 w-5 text-white animate-spin" />
-                    ) : (
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{index + 1}</span>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{process.name}</h3>
-                    <p className="text-sm text-muted-foreground">{process.description}</p>
-                  </div>
+                <div
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                    isComplete && "bg-success text-success-foreground",
+                    isActive && "bg-brand text-brand-foreground",
+                    !isComplete && !isActive && "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {isComplete ? (
+                    <Check className="h-4 w-4" />
+                  ) : isActive ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <span className="text-xs font-medium">{index + 1}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-none">{process.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{process.description}</p>
                 </div>
               </div>
             )
@@ -225,9 +169,14 @@ export default function TailwindTable() {
       )}
 
       {!loading && !error && segments.length === 0 && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full">
-          <p className="font-bold">No segments found</p>
-          <p>Try starring some segments on Strava and check back here.</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
+          <WindIcon className="h-8 w-8 text-muted-foreground/50" />
+          <div>
+            <p className="font-medium">No starred segments</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Star some segments on Strava and they'll appear here with tailwind analysis.
+            </p>
+          </div>
         </div>
       )}
     </>

@@ -35,13 +35,7 @@ export async function cachedMeteoRequest(coord: Coordinate, gridKey: string) {
       const url = "https://api.open-meteo.com/v1/forecast"
       const responses = await fetchWeatherApi(url, params)
       const response = responses[0]
-
       const utcOffsetSeconds = response.utcOffsetSeconds()
-      const timezone = response.timezone()
-      const timezoneAbbreviation = response.timezoneAbbreviation()
-      const latitude = response.latitude()
-      const longitude = response.longitude()
-
       const current = response.current()!
 
       // Note: The order of weather variables in the URL query and the indices below need to match!

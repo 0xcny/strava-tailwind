@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useActionState } from "react"
+import { LogInIcon } from "lucide-react"
 
 export function LoginDrawer() {
   const [state, formLogin, isPending] = useActionState<any, FormData>(login, null)
@@ -25,19 +26,20 @@ export function LoginDrawer() {
   return (
     <Drawer>
       <DrawerTrigger asChild>
-        <Button className="animate-appear text-primary border-primary m-2 md:m-4 lg:m-6" variant="outline">
-          Login
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <LogInIcon className="h-3.5 w-3.5" />
+          Log in
         </Button>
       </DrawerTrigger>
       <DrawerContent>
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader>
-            <DrawerTitle className="text-primary">Login</DrawerTitle>
-            <DrawerDescription>Please login to access the application.</DrawerDescription>
+            <DrawerTitle>Welcome back</DrawerTitle>
+            <DrawerDescription>Sign in to your KomQuest account.</DrawerDescription>
           </DrawerHeader>
           <form className="grid gap-4 p-4" action={formLogin}>
             <div className="grid gap-2">
-              <Label htmlFor="username">User</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
                 className={inputClass}
                 required
@@ -46,7 +48,7 @@ export function LoginDrawer() {
                 name="username"
                 type="text"
                 autoComplete="username"
-                placeholder="username"
+                placeholder="Enter your username"
                 autoCorrect="off"
               />
             </div>
@@ -59,16 +61,22 @@ export function LoginDrawer() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="••••••••••"
+                placeholder="Enter your password"
                 autoComplete="current-password"
                 autoCorrect="off"
               />
             </div>
 
             <DrawerFooter className="px-0">
-              <Button className="flex items-center justify-center" type="submit" disabled={isPending}>
-                Login
-                {isPending && <Spinner size={10} />}
+              <Button type="submit" disabled={isPending} className="bg-brand text-brand-foreground hover:bg-brand/90">
+                {isPending ? (
+                  <>
+                    Signing in
+                    <Spinner size={14} />
+                  </>
+                ) : (
+                  "Sign in"
+                )}
               </Button>
               <DrawerClose asChild>
                 <Button type="button" variant="outline" disabled={isPending}>

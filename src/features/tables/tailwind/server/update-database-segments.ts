@@ -1,4 +1,3 @@
-import { verifySession } from "@/app/auth/actions/verify-session"
 import pb from "@/lib/pocketbase"
 import { Collections, KomEffortRecord, SegmentRecord } from "@/lib/types/pocketbase-types"
 

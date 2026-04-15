@@ -9,6 +9,6 @@ export const THRESHOLD = {
   OVERLONG: 10000, // m segment length
   CURVY: 1.25, // amount of curves / 1000m
   STRAIGHT: 20, // degree max bearing change
-  UNCONTESTET: 0.01, // efforts per day since creation (˜35/year)
-  CONTESTET: 4000, // efforts total
+  UNCONTESTED: 0.01, // efforts per day since creation (˜35/year)
+  CONTESTED: 4000, // efforts total
 }

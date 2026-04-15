@@ -1,12 +1,8 @@
-import { BaseTableSegment } from "@/lib/types/types"
-//TODO refactor typesafety
 export function getDeltaSortExpression(column: string | undefined, order: "asc" | "desc" | undefined): string {
   if (column) {
     switch (column) {
       case "status":
         return order === "asc" ? "status" : "-status"
-      case "opponent":
-        return order === "asc" ? "opponent.name" : "-opponent.name"
       case "city":
         return order === "asc" ? "kom_effort.segment.city" : "-kom_effort.segment.city"
       case "name":

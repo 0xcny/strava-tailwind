@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { getGreatCircleBearing, getPreciseDistance } from "geolib"
+import polyline from "@mapbox/polyline"
 import { THRESHOLD } from "./constants"
 import { Line, Label, Coordinate } from "./types/types"
 import { SegmentRecord } from "./types/pocketbase-types"
@@ -54,8 +55,8 @@ export const getLabel = (segment: any): Label[] => {
   const now = new Date()
   const diffInMs = now.getTime() - date.getTime()
   const daysSinceCreation = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
-  if (segment.effort_count / daysSinceCreation <= THRESHOLD.UNCONTESTET) classification.push("Uncontested")
-  else if (segment.effort_count >= THRESHOLD.CONTESTET) classification.push("Contested")
+  if (segment.effort_count / daysSinceCreation <= THRESHOLD.UNCONTESTED) classification.push("Uncontested")
+  else if (segment.effort_count >= THRESHOLD.CONTESTED) classification.push("Contested")
   if (segment.average_grade > THRESHOLD.CLIMB) classification.push("Climb")
   else if (segment.average_grade < THRESHOLD.DOWNHILL) classification.push("Downhill")
   if (segment.distance > THRESHOLD.OVERLONG) classification.push("Overlong")
@@ -96,10 +97,9 @@ const pathCurveAmount = (path: Line[], angleThreshold = 60): number => {
  * @returns {Line []} Array of line forming a path.
  */
 
-export const getPath = (polyline: string) => {
+export const getPath = (encodedPolyline: string) => {
   const path: Line[] = []
-  const poly = require("@mapbox/polyline")
-  const coordPairs: [number, number][] = poly.decode(polyline)
+  const coordPairs: [number, number][] = polyline.decode(encodedPolyline)
   const formattedCoords: Coordinate[] = coordPairs.map((n) => ({ lat: n[0], lon: n[1] }))
 
   for (let i = 1; i < coordPairs.length; i++) {
@@ -114,7 +114,7 @@ export const getPath = (polyline: string) => {
 }
 
 // TODO zod
-export const sanatizeSegment = (obj: any): SegmentRecord => {
+export const sanitizeSegment = (obj: any): SegmentRecord => {
   const getValue = (value: any, fallback: any = null) => value || fallback
 
   return {

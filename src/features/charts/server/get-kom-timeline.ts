@@ -4,38 +4,46 @@ import { SessionData } from "@/app/auth/types"
 import pb from "@/lib/pocketbase"
 import { Collections } from "@/lib/types/pocketbase-types"
 import { RecordModel } from "pocketbase"
+import { unstable_cache } from "@/lib/unstable-cache"
 
-export const getKomTimeline = async (session: SessionData): Promise<{ date: string; desktop: number }[]> => {
-  if (!session.isLoggedIn || session.pbAuth == null) throw new Error("Couldn't authenticate!")
-  pb.authStore.save(session.pbAuth)
+type TimelinePoint = { date: string; total: number }
 
-  let current = 3592
-  const rawData = await pb.collection(Collections.KomTimeseries).getFullList({
-    fields: "created,status",
-    sort: "created",
-  })
+export async function getKomTimeline(session: SessionData): Promise<TimelinePoint[]> {
+  return await unstable_cache(
+    async () => {
+      if (!session.isLoggedIn || session.pbAuth == null) return []
+      pb.authStore.save(session.pbAuth)
 
-  const data = rawData.map((entry: RecordModel): { date: string; desktop: number } => {
-    if (entry.status === "lost") current -= 1
-    else current += 1
-    const splitDate = entry.created.split(" ")[0]
-    return { date: splitDate, desktop: current }
-  })
-  const reducedData = reduceToLastOfMonth(data)
-  reducedData.unshift(data[0])
-  return reducedData
+      let current = 3592
+      const rawData = await pb.collection(Collections.KomTimeseries).getFullList({
+        fields: "created,status",
+        sort: "created",
+      })
+
+      const data: TimelinePoint[] = rawData.map((entry: RecordModel) => {
+        if (entry.status === "lost") current -= 1
+        else current += 1
+        const splitDate = entry.created.split(" ")[0]
+        return { date: splitDate, total: current }
+      })
+
+      const reduced = reduceToLastOfMonth(data)
+      if (data.length > 0) reduced.unshift(data[0])
+      return reduced
+    },
+    ["kom-timeline", session.userId ?? ""],
+    { revalidate: 300, tags: ["kom-timeline"] }
+  )()
 }
 
-//chatgpt keep eye on this
-function reduceToLastOfMonth(data: { date: string; desktop: number }[]): { date: string; desktop: number }[] {
-  const grouped: Record<string, { date: string; desktop: number }> = data.reduce((acc, entry) => {
+function reduceToLastOfMonth(data: TimelinePoint[]): TimelinePoint[] {
+  const grouped: Record<string, TimelinePoint> = {}
+  for (const entry of data) {
     const date = new Date(entry.date)
     const key = `${date.getFullYear()}-${date.getMonth()}`
-    if (!acc[key] || new Date(entry.date) > new Date(acc[key].date)) {
-      acc[key] = entry
+    if (!grouped[key] || new Date(entry.date) > new Date(grouped[key].date)) {
+      grouped[key] = entry
     }
-    return acc
-  }, {} as Record<string, { date: string; desktop: number }>)
-
+  }
   return Object.values(grouped)
 }

@@ -36,7 +36,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/hooks/use-column-visibility.tss",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [

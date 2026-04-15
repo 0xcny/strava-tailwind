@@ -11,7 +11,7 @@ import {
 import pb from "@/lib/pocketbase"
 import { fetchNewSegmentRecord, getStravaToken } from "@/lib/strava"
 import { ACTIVELY_ACQUIRED_KOM_THRESHOLD } from "@/lib/constants"
-import { checkIfRestored, DEBUG_LOG, errorResponse, log } from "./utils"
+import { checkIfRestored, createRequestLog, errorResponse } from "./utils"
 
 interface Order {
   ref_id: string
@@ -22,9 +22,10 @@ interface Order {
 }
 export const maxDuration = 60 // vercel
 
-let STRAVA_REQUEST_COUNT = 0
 export async function GET(req: Request) {
-  STRAVA_REQUEST_COUNT = 0
+  let stravaRequestCount = 0
+  const { log, getLog } = createRequestLog()
+
   try {
     const headersList = await headers()
     const apiKey = headersList.get("x-api-key")
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
       log(wasRefreshed ? "REFRESHED - " : "VALID - ", false)
       stravaToken = token
     } catch (error) {
-      return errorResponse("Couldn't retrieve Strava Access Token ", 511, error)
+      return errorResponse("Couldn't retrieve Strava Access Token ", 511, getLog(), error)
     }
     log(stravaToken + " - Success")
 
@@ -86,7 +87,8 @@ export async function GET(req: Request) {
 
     log(`[API] Fetching First Kom Page`)
     try {
-      apiDetails = await fetchKomPageWithRetry(1, stravaToken, 3, 1500)
+      apiDetails = await fetchKomPageWithRetry(1, stravaToken, log, 3, 1500)
+      stravaRequestCount++
     } catch (error) {
       log(`[WARNING] API failed: ${error}`)
     }
@@ -94,7 +96,7 @@ export async function GET(req: Request) {
     if (apiDetails.size === 0) {
       log(`[SCRAPER] API returned empty — falling back to scraper`)
       const scraperUrl = process.env.SCRAPER_URL
-      if (!scraperUrl) return errorResponse("API failed and scraper URL not configured", 503)
+      if (!scraperUrl) return errorResponse("API failed and scraper URL not configured", 503, getLog())
       try {
         const scraperRes = await fetch(`${scraperUrl}/scrape?athlete_id=${userId}`, {
           headers: { "x-api-secret": process.env.SCRAPER_SECRET || "" },
@@ -107,18 +109,18 @@ export async function GET(req: Request) {
         usedScraper = true
         log(`[SCRAPER] Got ${apiIds.size} segment IDs (${scraperData.age_minutes}min old)`)
       } catch (error) {
-        return errorResponse("Both API and scraper failed", 503, error)
+        return errorResponse("Both API and scraper failed", 503, getLog(), error)
       }
     } else {
       if (apiDetails.size === 200) {
         log(`[API] Fetching ${max_pages - 1} more Kom Pages `)
         try {
           for (let page = 2; page <= max_pages; page++) {
-            apiPromises.push(fetchKomPageWithRetry(page, stravaToken))
+            apiPromises.push(fetchKomPageWithRetry(page, stravaToken, log))
           }
           apiResults = await Promise.all(apiPromises)
         } catch (error) {
-          return errorResponse("Couldn't fetch Kom Lists", 503, error)
+          return errorResponse("Couldn't fetch Kom Lists", 503, getLog(), error)
         }
         for (const result of apiResults) {
           for (const [key, value] of result) {
@@ -133,12 +135,12 @@ export async function GET(req: Request) {
         const page = max_pages + 1
         log(`[API] Fetching an extra page (${page})`)
         try {
-          const pageResult = await fetchKomPageWithRetry(page, stravaToken, 2, 1000, true)
+          const pageResult = await fetchKomPageWithRetry(page, stravaToken, log, 2, 1000, true)
           for (const [key, value] of pageResult) {
             apiDetails.set(key, value)
           }
         } catch (error) {
-          return errorResponse(`Couldn't fetch extra page (${page})`, 503, error)
+          return errorResponse(`Couldn't fetch extra page (${page})`, 503, getLog(), error)
         }
       }
 
@@ -159,7 +161,7 @@ export async function GET(req: Request) {
 
     if (ownedKomIds.size - apiIds.size > 150) {
       log(`[ERROR] KOM count mismatch: DB has ${ownedKomIds.size}, ${usedScraper ? "scraper" : "API"} returned ${apiIds.size} — rejecting`)
-      return errorResponse("Can't account for complete Kom List", 510)
+      return errorResponse("Can't account for complete Kom List", 510, getLog())
     }
 
     log(`[${usedScraper ? "SCRAPER" : "API"}] Success`)
@@ -177,7 +179,7 @@ export async function GET(req: Request) {
         for (const lostId of lostKomIds) {
           const storedEffort = userEfforts.find((effort) => effort.segment_id === lostId)
           if (storedEffort == null || storedEffort.id == null)
-            return errorResponse("Couldn't resolve lost effort, which was expected", 512, { id: lostId })
+            return errorResponse("Couldn't resolve lost effort, which was expected", 512, getLog(), { id: lostId })
           log(
             `[DATABASE] Updating a present Kom Effort Record (seg_id:${storedEffort.segment_id}, effort_ref:${storedEffort.id})`
           )
@@ -199,6 +201,7 @@ export async function GET(req: Request) {
                 return errorResponse(
                   `Error occured while updating an existing Kom Effort Record to lost (seg_id:${lostId})`,
                   513,
+                  getLog(),
                   error,
                   lostKomIds
                 )
@@ -218,7 +221,7 @@ export async function GET(req: Request) {
           try {
             lossRecordRef = await pb.collection(Collections.KomTimeseries).create(lossRecord)
           } catch (error) {
-            return errorResponse(`Error occured while creating a Loss Record (seg_id:${lostId})`, 513, error)
+            return errorResponse(`Error occured while creating a Loss Record (seg_id:${lostId})`, 513, getLog(), error)
           }
           log(`[DATABASE] Succesfully created a Loss Record (seg_id:${lostId})`)
 
@@ -262,6 +265,7 @@ export async function GET(req: Request) {
                   return errorResponse(
                     `Error occured while updating an existing Kom Effort Record to gained (seg_id:${gainedId})`,
                     514,
+                    getLog(),
                     error,
                     gainedId
                   )
@@ -285,6 +289,7 @@ export async function GET(req: Request) {
               return errorResponse(
                 `Error occured while creating an active Gain Record (seg_id:${gainedId})`,
                 513,
+                getLog(),
                 error
               )
             }
@@ -306,7 +311,6 @@ export async function GET(req: Request) {
               log(`[DATABASE] Trying to fetch Segment (seg_id: ${gainedId})`)
               seg_ref = await pb.collection(Collections.Segments).getFirstListItem(`segment_id="${gainedId}"`)
             } catch {
-              // TODO make this catch conditional for only one type of error otherwise populate error
               log(`[DATABASE] Couldn't find segment (seg_id: ${gainedId})`)
 
               try {
@@ -316,6 +320,7 @@ export async function GET(req: Request) {
                 return errorResponse(
                   `Error occured while fetching/formatting a detailed Segment from Strava (seg_id: ${gainedId})`,
                   515,
+                  getLog(),
                   error,
                   gainedId
                 )
@@ -325,7 +330,7 @@ export async function GET(req: Request) {
                 log(`[DATABASE] Creating Segment Record (seg_id: ${gainedId})`)
                 seg_ref = await pb.collection(Collections.Segments).create(segment!)
               } catch (error) {
-                return errorResponse(`Error occured while creating a new Segment on the database`, 516, error, gainedId)
+                return errorResponse(`Error occured while creating a new Segment on the database`, 516, getLog(), error, gainedId)
               }
             }
             const timeNow = new Date().getTime()
@@ -350,6 +355,7 @@ export async function GET(req: Request) {
               return errorResponse(
                 `Error occured while creating a new Kom Effort on the database (seg_id: ${gainedId})`,
                 517,
+                getLog(),
                 error,
                 gainedId
               )
@@ -370,6 +376,7 @@ export async function GET(req: Request) {
               return errorResponse(
                 `Error occured while creating an active Gain Record (seg_id:${seg_ref.segment_id})`,
                 513,
+                getLog(),
                 error
               )
             }
@@ -403,16 +410,16 @@ export async function GET(req: Request) {
       )
       await Promise.all(concurrentUpdates)
 
-      await sendOrder(order)
+      await sendOrder(order, log)
     } else {
       log(`[INFO] Sets are identical (Db: ${ownedKomIds.size} - Api: ${apiIds.size})`)
     }
-    log(`[INFO] Requests made to Strava - ${STRAVA_REQUEST_COUNT}, Rate exceeded - ${exceededRate}`)
+    log(`[INFO] Requests made to Strava - ${stravaRequestCount}, Rate exceeded - ${exceededRate}`)
     log("[EXIT] 200")
 
-    return new NextResponse(DEBUG_LOG, { status: 200 })
+    return new NextResponse(getLog(), { status: 200 })
   } catch (error) {
-    return errorResponse("Uncaught Error in route", 520, error)
+    return errorResponse("Uncaught Error in route", 520, getLog(), error)
   }
 }
 
@@ -420,6 +427,7 @@ export async function GET(req: Request) {
 const fetchKomPageWithRetry = async (
   page: number,
   token: string,
+  log: (message: string, newline?: boolean) => void,
   retries = 2,
   delay = 1000,
   allowEmpty = false
@@ -431,7 +439,6 @@ const fetchKomPageWithRetry = async (
         url: `${process.env.STRAVA_KOM_URL}?page=${page}&per_page=200`,
         headers: { Authorization: "Bearer " + token },
       })
-      STRAVA_REQUEST_COUNT++
       log(`  - ${page} (${response.data.length})`)
       if (!allowEmpty && response.data.length === 0) {
         log(`[ERROR] Empty response on attempt ${i + 1} fetching page ${page}, retrying in ${delay}ms...`)
@@ -472,7 +479,7 @@ const fetchKomPageWithRetry = async (
   throw new Error(`Failed to fetch page ${page} after ${retries} retries.`)
 }
 
-async function sendOrder(order: Order[]) {
+async function sendOrder(order: Order[], log: (message: string, newline?: boolean) => void) {
   log(`[INFO] Sending order (${order.length}) to gcloud... `, false)
   try {
     const gcloudResponse = await fetch(process.env.GCLOUD_URL!, {

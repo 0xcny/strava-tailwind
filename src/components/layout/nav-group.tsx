@@ -1,4 +1,4 @@
-"use clint"
+"use client"
 
 import { ReactNode } from "react"
 import { ChevronRight } from "lucide-react"

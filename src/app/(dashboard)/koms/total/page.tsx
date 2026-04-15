@@ -5,7 +5,6 @@ import { TotalTable } from "@/features/tables/total/total-table"
 import { SearchParams } from "@/features/tables/_lib/types"
 import { searchParamsSchema } from "@/features/tables/_lib/validations"
 import { getTotalKoms } from "@/features/tables/total/server/queries"
-import { TableSkeleton } from "@/features/tables/_components/table-skeleton"
 import { CustomTableSkeleton } from "@/components/table/table-skeleton"
 
 export interface TotalPageProps {
@@ -22,7 +21,7 @@ export default async function TotalPage({ searchParams }: TotalPageProps) {
   const dataPromise = getTotalKoms(search)
 
   return (
-    <div className="grid items-center gap-8 py-5 px-2 lg:px-4">
+    <div className="p-4 lg:p-6">
       <React.Suspense
         fallback={
           <CustomTableSkeleton

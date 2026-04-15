@@ -5,7 +5,7 @@ import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { MailCheckIcon, MailWarningIcon, SendIcon } from "lucide-react"
+import { MailCheckIcon, MailWarningIcon, SendIcon, CrownIcon } from "lucide-react"
 import Link from "next/link"
 import { sendEmail } from "./server/contact-email"
 import { Spinner } from "@/components/spinner"
@@ -36,132 +36,91 @@ export function ContactSection() {
 
     try {
       const validated = formSchema.parse(formValues)
-
-      await sendEmail({
-        email: validated.email,
-        username: validated.name,
-        text: validated.message,
-      })
-
-      return {
-        success: true,
-        message: "Message sent successfully!",
-        values: null,
-      }
+      await sendEmail({ email: validated.email, username: validated.name, text: validated.message })
+      return { success: true, message: "Message sent successfully!", values: null }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return {
-          errors: error.flatten().fieldErrors,
-          values: formValues,
-        }
+        return { errors: error.flatten().fieldErrors, values: formValues }
       }
-      return {
-        error: "Failed to send message",
-        values: formValues,
-      }
+      return { error: "Failed to send message", values: formValues }
     }
   }, null)
 
-  let sendButton = (
-    <Button
-      variant="outline"
-      type="submit"
-      className="w-full hover:bg-primary hover:text-card bg-card border-primary text-primary md:w-auto flex justify-center items-center"
-    >
-      Send
-      <SendIcon size={13} />
-    </Button>
-  )
-  if (isPending)
-    sendButton = (
-      <Button
-        variant="outline"
-        type="submit"
-        className="w-full bg-card border-primary text-primary md:w-auto flex justify-center items-center"
-        disabled
-      >
-        Sending
-        <Spinner size={13} />
-      </Button>
-    )
-  else if (state?.success)
-    sendButton = (
-      <div className="gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-4 py-2 w-full rounded-m bg-card border border-success text-success md:w-fit flex justify-center items-center">
-        Success
-        <MailCheckIcon size={13} />
-      </div>
-    )
-  else if (state?.error)
-    sendButton = (
-      <div className="gap-2 whitespace-nowrap rounded-md text-sm font-medium h-9 px-4 py-2 w-full rounded-m bg-card border border-destructive text-destructive md:w-fit flex justify-center items-center">
-        Error
-        <MailWarningIcon size={13} />
-      </div>
-    )
-
   return (
-    <section id="contact" className="mx-5 mb-5 border-card rounded-xl p-8 md:px-20 mt-20 bg-card">
-      <div className="grid md:grid-cols-2 gap-12">
-        <div className="space-y-8 order-2 md:order-1">
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-primary">KomQuest (tbd)</h4>
-            <nav className="flex flex-col space-y-2">
-              <Link href="/privacy-policy" className="text-muted-foreground hover:text-primary">
-                Privacy Policy
-              </Link>
-              <Link href="/terms-of-service" className="text-muted-foreground hover:text-primary">
-                Terms of Service
-              </Link>
-              <Link href="/about-us" className="text-muted-foreground hover:text-primary">
-                About Us
-              </Link>
-              <Link href="/contact" className="text-muted-foreground hover:text-primary">
-                Contact
-              </Link>
-            </nav>
-          </div>
-          <div className="text-sm text-muted-foreground">&copy; {currentYear} KomQuest(tbd). All rights reserved.</div>
-        </div>
-
-        <div className="space-y-4 order-1 md:order-2">
-          <h4 className="text-lg font-semibold text-primary">Request App access</h4>
-          <form action={formAction} className="space-y-4">
-            <div className="space-y-2">
-              <Input
-                className="border-muted"
-                id="name"
-                name="name"
-                placeholder="Enter your strava username"
-                defaultValue={state?.values?.name || ""}
-              />
-              {state?.errors?.name && <p className="text-sm text-red-500">{state.errors.name[0]}</p>}
-
-              <Input
-                className="border-muted"
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email"
-                defaultValue={state?.values?.email || ""}
-              />
-              {state?.errors?.email && <p className="text-sm text-red-500">{state.errors.email[0]}</p>}
-
-              <Textarea
-                id="message"
-                name="message"
-                placeholder="Describe your usecase"
-                className="border-muted min-h-[100px]"
-                defaultValue={state?.values?.message || ""}
-              />
-              {state?.errors?.message && <p className="text-sm text-red-500">{state.errors.message[0]}</p>}
-
-              {sendButton}
-
-              {state?.error && <p className="text-sm text-red-500">{state.error}</p>}
+    <footer id="contact" className="border-t">
+      <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+        <div className="grid gap-12 lg:grid-cols-5 lg:gap-16">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground text-background">
+                <CrownIcon className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-base font-semibold">KomQuest</span>
             </div>
-          </form>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Analytics for competitive cyclists who want to track, analyze, and defend their Strava KOMs.
+            </p>
+            <nav className="flex flex-col gap-1.5 text-sm">
+              {["Privacy Policy", "Terms of Service", "About"].map((label) => (
+                <Link
+                  key={label}
+                  href={`/${label.toLowerCase().replace(/ /g, "-")}`}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            <p className="text-xs text-muted-foreground">&copy; {currentYear} KomQuest</p>
+          </div>
+
+          <div className="lg:col-span-3">
+            <h3 className="text-base font-semibold">Request Access</h3>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Currently invite-only. Leave your details and we'll get you set up.
+            </p>
+            <form action={formAction} className="mt-5 space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Input name="name" placeholder="Strava username" defaultValue={state?.values?.name || ""} />
+                  {state?.errors?.name && <p className="mt-1 text-xs text-destructive">{state.errors.name[0]}</p>}
+                </div>
+                <div>
+                  <Input name="email" type="email" placeholder="Email" defaultValue={state?.values?.email || ""} />
+                  {state?.errors?.email && <p className="mt-1 text-xs text-destructive">{state.errors.email[0]}</p>}
+                </div>
+              </div>
+              <div>
+                <Textarea
+                  name="message"
+                  placeholder="How do you plan to use KomQuest?"
+                  className="min-h-[100px] resize-none"
+                  defaultValue={state?.values?.message || ""}
+                />
+                {state?.errors?.message && <p className="mt-1 text-xs text-destructive">{state.errors.message[0]}</p>}
+              </div>
+
+              {isPending ? (
+                <Button disabled size="sm">Sending <Spinner size={14} /></Button>
+              ) : state?.success ? (
+                <div className="inline-flex h-8 items-center gap-1.5 rounded-md border border-success/50 bg-success/10 px-3 text-sm text-success">
+                  <MailCheckIcon className="h-3.5 w-3.5" /> Sent
+                </div>
+              ) : state?.error ? (
+                <div className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/50 bg-destructive/10 px-3 text-sm text-destructive">
+                  <MailWarningIcon className="h-3.5 w-3.5" /> Failed
+                </div>
+              ) : (
+                <Button type="submit" size="sm" className="gap-1.5">
+                  Send <SendIcon className="h-3 w-3" />
+                </Button>
+              )}
+
+              {state?.error && <p className="text-xs text-destructive">{state.error}</p>}
+            </form>
+          </div>
         </div>
       </div>
-    </section>
+    </footer>
   )
 }

@@ -105,6 +105,10 @@ export async function GET(): Promise<NextResponse<ReadableStream<TailwindTableSe
             body: JSON.stringify(tailwindSegments),
           })
 
+          if (!response.ok) {
+            throw new Error(`Weather data request failed with status ${response.status}`)
+          }
+
           const { results: starredSegmentsWithWeather } = await response.json()
 
           sendEvent("status", {

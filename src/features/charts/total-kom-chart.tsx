@@ -1,78 +1,57 @@
 "use client"
 
-import { Loader } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, ReferenceDot, XAxis, YAxis } from "recharts"
-
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { use } from "react"
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "hsl(var(--chart-2))",
+  total: {
+    label: "Total KOMs",
+    color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig
 
 export function TotalKomChart({
   chartDataPromise,
 }: {
-  chartDataPromise: Promise<{ date: string; desktop: number }[]>
+  chartDataPromise: Promise<{ date: string; total: number }[]>
 }) {
   const chartData = use(chartDataPromise)
   return (
-    <ChartContainer config={chartConfig} className="h-56 md:h-80 lg:h-[400px] w-full">
-      <AreaChart margin={{ left: -20 }} accessibilityLayer data={chartData} height={200}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="date" dy={5} tickMargin={5} tickLine={false} axisLine={false} tickFormatter={formatDateAxis} />
+    <ChartContainer config={chartConfig} className="h-[250px] w-full">
+      <AreaChart margin={{ left: -20, right: 4 }} data={chartData}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+        <XAxis dataKey="date" tickLine={false} axisLine={false} tickFormatter={formatDateAxis} tick={{ fontSize: 12 }} />
         <YAxis
-          type="number"
+          tickLine={false}
+          axisLine={false}
           tickFormatter={(value) => value.toLocaleString()}
-          domain={["dataMin - 100", "dataMax + 100"]}
-          tickCount={7}
+          domain={["dataMin - 50", "dataMax + 50"]}
+          tick={{ fontSize: 12 }}
         />
         <ChartTooltip
-  cursor={false}
-  content={(p) => <ChartTooltipContent {...(p as any)} hideLabel />}
-
-/>
+          cursor={false}
+          content={(p) => <ChartTooltipContent {...(p as any)} hideLabel />}
+        />
         <defs>
-          <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-desktop)" stopOpacity={0.8} />
-            <stop offset="95%" stopColor="var(--color-desktop)" stopOpacity={0.1} />
+          <linearGradient id="fillTotal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="var(--color-total)" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="var(--color-total)" stopOpacity={0} />
           </linearGradient>
         </defs>
-
         <Area
-          dataKey="desktop"
-          type="natural"
-          fill="url(#fillDesktop)"
-          fillOpacity={0.4}
-          stroke="var(--color-desktop)"
+          dataKey="total"
+          type="monotone"
+          fill="url(#fillTotal)"
+          stroke="var(--color-total)"
+          strokeWidth={2}
         />
       </AreaChart>
     </ChartContainer>
   )
-}
-
-export function TotalKomChartLoading() {
-  const test1 = (
-    <ChartContainer config={chartConfig} className="h-56 md:h-80 lg:h-[400px] w-full">
-      <AreaChart margin={{ left: -20 }} accessibilityLayer height={200}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="date" tickMargin={5} tickLine={false} axisLine={false} tickFormatter={formatDateAxis} />
-        <YAxis type="number" tickFormatter={(value) => value.toLocaleString()} domain={[0, 100]} tickCount={5} />
-      </AreaChart>
-    </ChartContainer>
-  )
-  const test2 = (
-    <div className="h-[400px] w-full flex items-center justify-center">
-      <Loader className="size-6 animate-spin text-muted-foreground" />
-    </div>
-  )
-  return test1
 }
 
 function formatDateAxis(tickItem: string) {
-  const dateSplit = new Date(tickItem).toDateString().slice(4).split(" ")
-  return dateSplit[0] + " " + dateSplit[2].slice(2)
+  const d = new Date(tickItem)
+  return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
 }

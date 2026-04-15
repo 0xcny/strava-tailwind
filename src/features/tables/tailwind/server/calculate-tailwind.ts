@@ -70,13 +70,13 @@ export async function calculateTailwind(segments: (TailwindTableSegment & { path
 
     for (let i = 0; i < path.length; i++) {
       const line = path[i]
-      aggregateDistance += line.distance
 
       const weatherData = weatherDataMap.get(line.gridKey!)
       if (!weatherData) {
-        console.warn(`Missing weather data for grid: ${line.gridKey}`)
         continue
       }
+
+      aggregateDistance += line.distance
 
       // Circular degree calculation
       const rawAngleDiff = line.bearing - weatherData.current.windDirection10m
@@ -97,9 +97,9 @@ export async function calculateTailwind(segments: (TailwindTableSegment & { path
       line.windDirection = angleDifference
     }
 
-    const tail = (tailAbs / aggregateDistance) * 100
-    const cross = (crossAbs / aggregateDistance) * 100
-    const head = (headAbs / aggregateDistance) * 100
+    const tail = aggregateDistance > 0 ? (tailAbs / aggregateDistance) * 100 : 0
+    const cross = aggregateDistance > 0 ? (crossAbs / aggregateDistance) * 100 : 0
+    const head = aggregateDistance > 0 ? (headAbs / aggregateDistance) * 100 : 0
     const avgTailwindSpeed = tailAbs > 0 ? aggregateWindspeed / tailAbs : 0
 
     const { path: _, ...rest } = segment

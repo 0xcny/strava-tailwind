@@ -3,7 +3,7 @@
 import pb from "@/lib/pocketbase"
 import { Collections, SegmentRecord, UserTokenRecord } from "./types/pocketbase-types"
 import axios from "axios"
-import { getLabel, getPath, sanatizeSegment } from "./utils"
+import { getLabel, getPath, sanitizeSegment } from "./utils"
 import { verifySession } from "@/app/auth/actions/verify-session"
 import { cache } from "react"
 
@@ -26,7 +26,7 @@ export const fetchNewSegmentRecord = async (id: number, token: string): Promise<
     ...segmentRequest.data,
     path: getPath(segmentRequest.data.map.polyline),
   }
-  return sanatizeSegment({ ...detailedSegment, labels: getLabel(detailedSegment) })
+  return sanitizeSegment({ ...detailedSegment, labels: getLabel(detailedSegment) })
 }
 
 export const getStravaToken = cache(async (overlapSeconds = 600): Promise<[string, boolean]> => {

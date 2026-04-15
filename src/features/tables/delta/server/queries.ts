@@ -11,19 +11,11 @@ export async function getDeltaSegments(input: TableQuerySchema) {
   return await unstable_cache(
     async () => {
       try {
-        // Offset to paginate the results
-        const offset = (input.page - 1) * input.perPage
-        // Column and order to sort by
-        // Spliting the sort string by "." to get the column and order
-        // Example: "title.desc" => ["title", "desc"]
         const [column, order] = (input.sort?.split(".").filter(Boolean) ?? ["created", "desc"]) as [
           keyof DeltaTableSegment | undefined,
           "asc" | "desc" | undefined
         ]
         const sortExpression = getDeltaSortExpression(column, order)
-        // Convert the date strings to date objects
-        const fromDate = input.from ? new Date(input.from) : undefined
-        const toDate = input.to ? new Date(input.to) : undefined
 
         // Build filter conditions
         let filterConditions = []
@@ -63,14 +55,9 @@ export async function getDeltaSegments(input: TableQuerySchema) {
         const result = await pb.collection(Collections.KomTimeseries).getList(input.page, input.perPage, {
           filter: combinedFilter,
           sort: sortExpression,
-          expand: "opponent,kom_effort,kom_effort.segment",
+          expand: "kom_effort,kom_effort.segment",
           fields: `status,
     created,
-    expand.opponent.name,
-    expand.opponent.athlete_id,
-    expand.opponent.avatar,
-    expand.opponent.collectionId,
-    expand.opponent.id,
     expand.kom_effort.segment_id,
     expand.kom_effort.has_kom,
     expand.kom_effort.is_starred,
@@ -84,15 +71,6 @@ export async function getDeltaSegments(input: TableQuerySchema) {
         const data: DeltaTableSegment[] = result.items.map((d) => ({
           status: d.status,
           created: new Date(d.created),
-          opponent: d.expand!.opponent
-            ? {
-                name: d.expand!.opponent.name,
-                athlete_id: d.expand!.opponent.athlete_id,
-                avatar: `${process.env.PB_URL}/api/files/${d.expand!.opponent.collectionId}/${d.expand!.opponent.id}/${
-                  d.expand!.opponent.avatar
-                }`,
-              }
-            : undefined,
           segment_id: d.expand!.kom_effort.segment_id,
           is_starred: d.expand!.kom_effort.is_starred,
           has_kom: d.expand!.kom_effort.has_kom,

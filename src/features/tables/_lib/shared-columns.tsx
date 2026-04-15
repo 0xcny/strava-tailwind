@@ -28,8 +28,8 @@ export function createBaseColumns<T extends BaseTableSegment>(): ColumnDef<T>[] 
                 labels.map((c: Label) => (
                   <Badge
                     key={c}
-                    variant="outline"
-                    className="text-primary bg-card dark:text-secondary border-primary dark:border-secondary"
+                    variant="secondary"
+                    className="text-xs font-normal"
                   >
                     {c}
                   </Badge>

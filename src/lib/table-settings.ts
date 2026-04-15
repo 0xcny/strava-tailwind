@@ -1,7 +1,7 @@
 export type TableId = "delta" | "total" | "tailwind"
 
 // Define column IDs for each table type
-export type DeltaColumnId = "name" | "city" | "terrain" | "labels" | "opponent" | "status" | "created" | "actions"
+export type DeltaColumnId = "name" | "city" | "terrain" | "labels" | "status" | "created" | "actions"
 export type TotalColumnId = "star" | "name" | "city" | "terrain" | "labels" | "actions"
 export type TailwindColumnId = "kom" | "name" | "city" | "terrain" | "labels" | "tailwind" | "actions"
 
@@ -43,7 +43,6 @@ export const DEFAULT_TABLE_SETTINGS: {
       city: true,
       terrain: false,
       labels: false,
-      opponent: true,
       status: true,
       created: true,
       actions: true,

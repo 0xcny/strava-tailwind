@@ -2,24 +2,19 @@
 
 import { NavUser } from "./nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail, useSidebar } from "../ui/sidebar"
-import { Icons } from "@/components/icons"
 import { NavGroup } from "./nav-group"
 import { sidebarData } from "./sidebar-data"
-import { Jost } from "next/font/google"
-import { cn } from "@/lib/utils"
-
-const jost = Jost({
-  subsets: ["latin"], // Specify character subsets
-})
+import { CrownIcon } from "lucide-react"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const sidebar = useSidebar()
-  const isOpen = sidebar.open
+  const { open } = useSidebar()
   return (
     <Sidebar collapsible="icon" variant="sidebar" {...props}>
-      <SidebarHeader className="flex flex-row justify-evenly items-center stroke-secondary fill-secondary">
-        <Icons.logo />
-        {isOpen && <h1 className={cn(jost.className, "text-primary font-bold text-3xl")}>Strava App</h1>}
+      <SidebarHeader className="flex flex-row items-center gap-2.5 px-3 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+          <CrownIcon className="h-4 w-4" />
+        </div>
+        {open && <span className="text-sm font-semibold tracking-tight">KomQuest</span>}
       </SidebarHeader>
       <SidebarContent>
         {sidebarData.navGroups.map((props) => (

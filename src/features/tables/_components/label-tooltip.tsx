@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Badge } from "../../../components/ui/badge"
+import { Badge } from "@/components/ui/badge"
 
 interface LabelsTooltipProps {
   labels: string[]
@@ -14,8 +14,8 @@ export default function LabelsTooltip({ labels }: LabelsTooltipProps) {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger className="h-full cursor-default" asChild>
         <Badge
-          variant="outline"
-          className="xl:hidden text-secondary flex items-center justify-center leading-none font-medium border border-primary dark:border-secondary"
+          variant="secondary"
+          className="xl:hidden flex items-center justify-center leading-none text-xs tabular-nums"
           onMouseEnter={() => setIsOpen(true)}
           onMouseLeave={() => setIsOpen(false)}
         >
@@ -25,7 +25,7 @@ export default function LabelsTooltip({ labels }: LabelsTooltipProps) {
       <PopoverContent
         onMouseEnter={() => setIsOpen(true)}
         onMouseLeave={() => setIsOpen(false)}
-        className="w-auto p-2 bg-background border-border text-sm text-primary font-medium"
+        className="w-auto p-2 text-sm"
       >
         {labels.join(", ")}
       </PopoverContent>

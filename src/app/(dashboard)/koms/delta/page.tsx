@@ -5,7 +5,6 @@ import pb from "@/lib/pocketbase"
 import { SearchParams } from "@/features/tables/_lib/types"
 import { searchParamsSchema } from "@/features/tables/_lib/validations"
 import { getDeltaSegments } from "@/features/tables/delta/server/queries"
-import { TableSkeleton } from "@/features/tables/_components/table-skeleton"
 import { DeltaTable } from "@/features/tables/delta/delta-table"
 import { CustomTableSkeleton } from "@/components/table/table-skeleton"
 
@@ -23,7 +22,7 @@ export default async function DeltaPage({ searchParams }: DeltaPageProps) {
   const dataPromise = getDeltaSegments(search)
 
   return (
-    <div className="grid items-center gap-8 py-5 px-2 lg:px-4">
+    <div className="p-4 lg:p-6">
       <React.Suspense
         fallback={
           <CustomTableSkeleton

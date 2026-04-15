@@ -36,13 +36,15 @@ export async function fetchStarredSegments(userId: string) {
   // Check if we need to fetch additional pages
   let allStarredSegments = [...stravaStarredList]
   if (stravaStarredList.length === 200) {
-    let i = 2
+    const MAX_PAGES = 20
+    let page = 2
 
-    while (i > 1) {
-      const starredPage = await fetchStarredPage(i, stravaToken)
+    while (page <= MAX_PAGES) {
+      const starredPage = await fetchStarredPage(page, stravaToken)
       stravaRequestCount++
       allStarredSegments = allStarredSegments.concat(starredPage)
-      i = starredPage.length === 200 ? i + 1 : 0
+      if (starredPage.length < 200) break
+      page++
     }
   }
 
@@ -63,7 +65,7 @@ export async function fetchStarredSegments(userId: string) {
  */
 
 async function fetchStarredPage(page: number, stravaToken: string) {
-  return fetch(`${process.env.STRAVA_API}/segments/starred?page=${page}&per_page=200`, {
+  const response = await fetch(`${process.env.STRAVA_API}/segments/starred?page=${page}&per_page=200`, {
     method: "GET",
     headers: {
       Authorization: "Bearer " + stravaToken,
@@ -72,15 +74,12 @@ async function fetchStarredPage(page: number, stravaToken: string) {
       tags: ["strava-starred"],
     },
   })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: Couldn't retrieve starred segment page ${page} from Strava`)
-      }
-      return response.json()
-    })
-    .catch((err) => {
-      throw new Error(`Error 401: Couldn't retrieve starred segment page ${page} from Strava`)
-    })
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: Couldn't retrieve starred segment page ${page} from Strava`)
+  }
+
+  return response.json()
 }
 
 /**

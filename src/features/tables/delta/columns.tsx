@@ -7,13 +7,10 @@ import {
   MedalIcon,
   PencilLineIcon,
   RotateCwIcon,
-  Scale3dIcon,
-  ScaleIcon,
   Trash2Icon,
 } from "lucide-react"
 import { DeltaTableSegment } from "@/lib/types/types"
 import { DateRange } from "@/components/date-range-picker/types"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import StatusTooltip from "@/features/tables/delta/components/status-tooltip"
 import { TableColumnHeader } from "../_components/table-column-header"
 
@@ -28,7 +25,6 @@ export const deltaTableColumns: ColumnDef<DeltaTableSegment>[] = [
       const rowDate = new Date(getDateFromRow(row))
       const { from, to } = filterValue as DateRange
 
-      // Check if the date is within the specified range
       const isAfterFrom = from ? rowDate >= new Date(from) : true
       const isBeforeTo = to ? rowDate <= new Date(to) : true
 
@@ -90,33 +86,8 @@ export const deltaTableColumns: ColumnDef<DeltaTableSegment>[] = [
       }
     },
   },
-  {
-    id: "opponent",
-    accessorKey: "opponent",
-    accessorFn: (row) => (row.opponent ? row.opponent.name : ""),
-    header: ({ column }) => <TableColumnHeader column={column} title="Opponent" />,
-    cell: ({ row }) => {
-      const { opponent } = row.original
-      if (opponent) {
-        return (
-          <div className="flex items-center gap-1">
-            {opponent.name !== "Tied" ? (
-              <Avatar className="w-7 h-7">
-                <AvatarImage src={opponent.avatar} />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
-            ) : (
-              <ScaleIcon size={20} />
-            )}
-            <span>{opponent.name}</span>
-          </div>
-        )
-      }
-      return null
-    },
-  },
 ]
-//TODO tf
+
 const getDateFromRow = (row: Row<DeltaTableSegment>): number => {
   return new Date(row.original.created!).getTime()
 }

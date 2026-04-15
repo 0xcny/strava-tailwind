@@ -17,8 +17,8 @@ const geistMono = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "Strava Tools",
-  description: "By Conny",
+  title: "KomQuest",
+  description: "Advanced insights for Strava KOMs",
 }
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
           <NuqsAdapter>
             <Toaster
               toastOptions={{
-                className: "bg-secondary text-secondary-foreground rounded-md border-secondary-foreground",
+                className: "bg-card text-card-foreground border-border rounded-lg shadow-lg",
               }}
             />
             {children}
