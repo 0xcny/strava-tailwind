@@ -77,11 +77,10 @@ export async function checkIfRestored(segmentId: number) {
 }
 
 export async function errorResponse(message: string, status: number, logger: RequestLog, err?: unknown, ...params: unknown[]) {
-  logger.error("EXIT", message, {
-    status,
-    ...(err && { error: err instanceof Error ? err.message : String(err) }),
-    ...(params.length > 0 && { params }),
-  })
+  const data: Record<string, unknown> = { status }
+  if (err) data.error = err instanceof Error ? err.message : String(err)
+  if (params.length > 0) data.params = params
+  logger.error("EXIT", message, data)
 
   const serialized = logger.serialize()
 
